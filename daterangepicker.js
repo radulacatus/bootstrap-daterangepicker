@@ -50,6 +50,7 @@
         this.linkedCalendars = true;
         this.autoUpdateInput = true;
         this.alwaysShowCalendars = false;
+        this.hideInputFields = false;
         this.ranges = {};
 
         this.opens = 'right';
@@ -271,6 +272,9 @@
 
         if (typeof options.alwaysShowCalendars === 'boolean')
             this.alwaysShowCalendars = options.alwaysShowCalendars;
+
+        if (typeof options.hideInputFields === 'boolean')
+            this.hideInputFields = options.hideInputFields;
 
         // update day names order to firstDay
         if (this.locale.firstDay != 0) {
@@ -531,6 +535,10 @@
         },
 
         updateView: function() {
+            if(this.hideInputFields) {
+                this.container.find('input[name="daterangepicker_end"]').addClass('hide');
+                this.container.find('input[name="daterangepicker_start"]').addClass('hide');
+            }
             if (this.timePicker) {
                 this.renderTimePicker('left');
                 this.renderTimePicker('right');

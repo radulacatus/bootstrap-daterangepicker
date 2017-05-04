@@ -137,6 +137,12 @@
                 </label>
               </div>
 
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" id="hideInputFields"> hideInputFields
+                </label>
+              </div>
+
             </div>
             <div class="col-md-4">
 
@@ -325,6 +331,9 @@
 
           if ($('#alwaysShowCalendars').is(':checked'))
             options.alwaysShowCalendars = true;
+
+          if ($('#hideInputFields').is(':checked'))
+            options.hideInputFields = true;
 
           if ($('#parentEl').val().length)
             options.parentEl = $('#parentEl').val();
