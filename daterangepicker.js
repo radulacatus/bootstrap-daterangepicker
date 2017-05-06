@@ -130,20 +130,21 @@
 
         this.parentEl = (options.parentEl && $(options.parentEl).length) ? $(options.parentEl) : $(this.parentEl);
         this.container = $(options.template).appendTo(this.parentEl);
-        this.container.dateInputStart = this.container.find('input[name="daterangepicker_start"]');
-        this.container.dateInputEnd = this.container.find('input[name="daterangepicker_end"]');
 
-        var shouldBindToExternalInputFields = function(element){
+        var usesExternaInputFields = function(element){
             return element.is('div') && 
             element.find('input[name="daterangepicker_start"]').length > 0 &&
             element.find('input[name="daterangepicker_end"]').length > 0
         };
-        if (shouldBindToExternalInputFields(this.element)){
-            this.container.find('input[name="daterangepicker_start"]').addClass('hide');
-            this.container.find('input[name="daterangepicker_end"]').addClass('hide');
+        if (usesExternaInputFields(this.element)){
+            this.hideInputFields = true;
             this.container.dateInputStart = this.element.find('input[name="daterangepicker_start"]');
             this.container.dateInputEnd = this.element.find('input[name="daterangepicker_end"]');
+        } else {
+            this.container.dateInputStart = this.container.find('input[name="daterangepicker_start"]');
+            this.container.dateInputEnd = this.container.find('input[name="daterangepicker_end"]');
         }
+
         //
         // handle all the possible options overriding defaults
         //
@@ -291,7 +292,7 @@
         if (typeof options.updateInputsOnHoverDate === 'boolean')
             this.updateInputsOnHoverDate = options.updateInputsOnHoverDate;
 
-        if (!this.updateInputsOnHoverDate && typeof options.hideInputFields === 'boolean'){
+        if (typeof options.hideInputFields === 'boolean'){
             this.hideInputFields = options.hideInputFields;
         }
 
@@ -325,6 +326,21 @@
                     this.setStartDate(start);
                     this.setEndDate(end);
                 }
+            }
+            if (usesExternaInputFields(this.element)) {
+                var val = $(this.element).val(),
+                    split = val.split(this.locale.separator);
+
+                start = end = null;
+
+                if (this.dateInputStart.value) {
+                    start = moment(this.dateInputStart.value, this.locale.format);
+                } 
+                if (this.dateInputEnd.value) {
+                    end = moment(this.dateInputEnd.value, this.locale.format);
+                }
+                this.setStartDate(start);
+                this.setEndDate(end);
             }
         }
 
@@ -555,8 +571,7 @@
 
         updateView: function() {
             if(this.hideInputFields) {
-                this.container.dateInputEnd.addClass('hide');
-                this.container.dateInputStart.addClass('hide');
+                this.container.find('div[class="daterangepicker_input"]').addClass('hide');
             }
             if (this.timePicker) {
                 this.renderTimePicker('left');
