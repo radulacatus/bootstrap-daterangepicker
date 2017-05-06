@@ -52,6 +52,8 @@
         this.alwaysShowCalendars = false;
         this.hideInputFields = false;
         this.updateInputsOnHoverDate = true;
+        this.startDateRequired = true;
+        this.endDateRequired = true;
         this.ranges = {};
 
         this.opens = 'right';
@@ -291,6 +293,12 @@
 
         if (typeof options.updateInputsOnHoverDate === 'boolean')
             this.updateInputsOnHoverDate = options.updateInputsOnHoverDate;
+
+        if (typeof options.startDateRequired === 'boolean')
+            this.startDateRequired = options.startDateRequired;
+
+        if (typeof options.endDateRequired === 'boolean')
+            this.endDateRequired = options.endDateRequired;
 
         if (typeof options.hideInputFields === 'boolean'){
             this.hideInputFields = options.hideInputFields;
@@ -1067,16 +1075,19 @@
             if (this.container.dateInputStart.is(":focus") || this.container.dateInputEnd.is(":focus"))
                 return;
 
-            this.container.dateInputStart.val(this.startDate.format(this.locale.format));
+            if (this.startDate)
+                this.container.dateInputStart.val(this.startDate.format(this.locale.format));
             if (this.endDate)
                 this.container.dateInputEnd.val(this.endDate.format(this.locale.format));
 
-            if (this.singleDatePicker || (this.endDate && (this.startDate.isBefore(this.endDate) || this.startDate.isSame(this.endDate)))) {
+            if( this.singleDatePicker||
+                ((!this.endDateRequired || this.endDate) && 
+                (!this.startDateRequired || this.startDate) && 
+                (this.startDate.isBefore(this.endDate) || this.startDate.isSame(this.endDate) || !this.startDate || !this.endDate))){
                 this.container.find('button.applyBtn').removeAttr('disabled');
             } else {
                 this.container.find('button.applyBtn').attr('disabled', 'disabled');
             }
-
         },
 
         move: function() {

@@ -54,6 +54,18 @@
                 <input type="text" class="form-control" id="maxDate" value="" placeholder="MM/DD/YYYY">
               </div>
 
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" id="startDateRequired"> startDateRequired
+                </label>
+              </div>
+
+              <div class="checkbox">
+                <label>
+                  <input type="checkbox" id="endDateRequired"> endDateRequired
+                </label>
+              </div>
+
             </div>
             <div class="col-md-4">
 
@@ -361,6 +373,12 @@
 
           if (!$('#updateInputsOnHoverDate ').is(':checked'))
             options.updateInputsOnHoverDate  = false;
+
+          if (!$('#startDateRequired ').is(':checked'))
+            options.startDateRequired  = false;
+
+          if (!$('#endDateRequired ').is(':checked'))
+            options.endDateRequired  = false;
 
           if ($('#parentEl').val().length)
             options.parentEl = $('#parentEl').val();
