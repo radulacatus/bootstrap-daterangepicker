@@ -46,7 +46,6 @@
         this.linkedCalendars = true;
         this.autoUpdateInput = true;
         this.alwaysShowCalendars = false;
-        this.hideInputFields = false;
         this.updateInputsOnHoverDate = true;
         this.startDateRequired = true;
         this.endDateRequired = true;
@@ -97,17 +96,9 @@
             options.template = 
             '<div class="daterangepicker dropdown-menu">' +
                 '<div class="calendar left">' +
-                    '<div class="daterangepicker_input">' +
-                      '<input class="input-mini form-control" type="text" name="daterangepicker_start" value="" />' +
-                      '<i class="fa fa-calendar glyphicon glyphicon-calendar"></i>' +
-                    '</div>' +
                     '<div class="calendar-table"></div>' +
                 '</div>' +
                 '<div class="calendar right">' +
-                    '<div class="daterangepicker_input">' +
-                      '<input class="input-mini form-control" type="text" name="daterangepicker_end" value="" />' +
-                      '<i class="fa fa-calendar glyphicon glyphicon-calendar"></i>' +
-                    '</div>' +
                     '<div class="calendar-table"></div>' +
                 '</div>' +
                 '<div class="ranges">' +
@@ -121,19 +112,9 @@
         this.parentEl = (options.parentEl && $(options.parentEl).length) ? $(options.parentEl) : $(this.parentEl);
         this.container = $(options.template).appendTo(this.parentEl);
 
-        this.usesExternaInputFields = this.element.is('div') && 
-            this.element.find('input[name="daterangepicker_start"]').length > 0 &&
-            this.element.find('input[name="daterangepicker_end"]').length > 0;
-
-        if (this.usesExternaInputFields){
-            this.hideInputFields = true;
-            this.container.dateInputStart = this.element.find('input[name="daterangepicker_start"]');
-            this.container.dateInputEnd = this.element.find('input[name="daterangepicker_end"]');
-        } else {
-            this.container.dateInputStart = this.container.find('input[name="daterangepicker_start"]');
-            this.container.dateInputEnd = this.container.find('input[name="daterangepicker_end"]');
-        }
-
+        this.container.dateInputStart = this.element.find('input[name="daterangepicker_start"]');
+        this.container.dateInputEnd = this.element.find('input[name="daterangepicker_end"]');
+        
         //
         // handle all the possible options overriding defaults
         //
@@ -275,10 +256,6 @@
         if (typeof options.endDateRequired === 'boolean')
             this.endDateRequired = options.endDateRequired;
 
-        if (typeof options.hideInputFields === 'boolean'){
-            this.hideInputFields = options.hideInputFields;
-        }
-
         // update day names order to firstDay
         if (this.locale.firstDay != 0) {
             var iterator = this.locale.firstDay;
@@ -292,36 +269,16 @@
 
         //if no start/end dates set, check if an input element contains initial values
         if (typeof options.startDate === 'undefined' && typeof options.endDate === 'undefined') {
-            if ($(this.element).is('input[type=text]')) {
-                var val = $(this.element).val(),
-                    split = val.split(this.locale.separator);
+            start = end = null;
 
-                start = end = null;
-
-                if (split.length == 2) {
-                    start = moment(split[0], this.locale.format);
-                    end = moment(split[1], this.locale.format);
-                } else if (this.singleDatePicker && val !== "") {
-                    start = moment(val, this.locale.format);
-                    end = moment(val, this.locale.format);
-                }
-                if (start !== null && end !== null) {
-                    this.setStartDate(start);
-                    this.setEndDate(end);
-                }
+            if (this.container.dateInputStart.value) {
+                start = moment(this.dateInputStart.value, this.locale.format);
+            } 
+            if (this.container.dateInputEnd.value) {
+                end = moment(this.dateInputEnd.value, this.locale.format);
             }
-            if (this.usesExternaInputFields) {
-                start = end = null;
-
-                if (this.container.dateInputStart.value) {
-                    start = moment(this.dateInputStart.value, this.locale.format);
-                } 
-                if (this.container.dateInputEnd.value) {
-                    end = moment(this.dateInputEnd.value, this.locale.format);
-                }
-                this.setStartDate(start);
-                this.setEndDate(end);
-            }
+            this.setStartDate(start);
+            this.setEndDate(end);
         }
 
         if (typeof options.ranges === 'object') {
@@ -523,9 +480,6 @@
         },
 
         updateView: function() {
-            if(this.hideInputFields) {
-                this.container.find('div[class="daterangepicker_input"]').addClass('hide');
-            }
             if (this.endDate) {
                 this.container.dateInputEnd.removeClass('active');
                 this.container.dateInputStart.addClass('active');
@@ -1303,16 +1257,8 @@
         },
 
         updateElement: function() {
-            if (this.element.is('input') && !this.singleDatePicker && this.autoUpdateInput) {
-                this.element.val(this.startDate.format(this.locale.format) + this.locale.separator + this.endDate.format(this.locale.format));
-                this.element.trigger('change');
-            } else if (this.element.is('input') && this.autoUpdateInput) {
-                this.element.val(this.startDate.format(this.locale.format));
-                this.element.trigger('change');
-            } else if (this.usesExternaInputFields){
-                this.container.dateInputStart.val(this.startDate ? this.startDate.format(this.locale.format) : "");
-                this.container.dateInputEnd.val(this.endDate ? this.endDate.format(this.locale.format) : "");
-            }
+            this.container.dateInputStart.val(this.startDate ? this.startDate.format(this.locale.format) : "");
+            this.container.dateInputEnd.val(this.endDate ? this.endDate.format(this.locale.format) : "");
         },
 
         remove: function() {
