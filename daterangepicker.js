@@ -775,8 +775,12 @@
 
             if (this.startDate)
                 this.container.dateInputStart.val(this.startDate.format(this.locale.format));
+            else
+                this.container.dateInputStart.val("");
             if (this.endDate)
                 this.container.dateInputEnd.val(this.endDate.format(this.locale.format));
+            else
+                this.container.dateInputEnd.val("");
 
             if( this.singleDatePicker||
                 ((!this.endDateRequired || this.endDate) && 
