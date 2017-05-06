@@ -133,12 +133,11 @@
         this.parentEl = (options.parentEl && $(options.parentEl).length) ? $(options.parentEl) : $(this.parentEl);
         this.container = $(options.template).appendTo(this.parentEl);
 
-        var usesExternaInputFields = function(element){
-            return element.is('div') && 
-            element.find('input[name="daterangepicker_start"]').length > 0 &&
-            element.find('input[name="daterangepicker_end"]').length > 0
-        };
-        if (usesExternaInputFields(this.element)){
+        this.usesExternaInputFields = this.element.is('div') && 
+            this.element.find('input[name="daterangepicker_start"]').length > 0 &&
+            this.element.find('input[name="daterangepicker_end"]').length > 0;
+
+        if (this.usesExternaInputFields){
             this.hideInputFields = true;
             this.container.dateInputStart = this.element.find('input[name="daterangepicker_start"]');
             this.container.dateInputEnd = this.element.find('input[name="daterangepicker_end"]');
@@ -335,16 +334,13 @@
                     this.setEndDate(end);
                 }
             }
-            if (usesExternaInputFields(this.element)) {
-                var val = $(this.element).val(),
-                    split = val.split(this.locale.separator);
-
+            if (this.usesExternaInputFields) {
                 start = end = null;
 
-                if (this.dateInputStart.value) {
+                if (this.container.dateInputStart.value) {
                     start = moment(this.dateInputStart.value, this.locale.format);
                 } 
-                if (this.dateInputEnd.value) {
+                if (this.container.dateInputEnd.value) {
                     end = moment(this.dateInputEnd.value, this.locale.format);
                 }
                 this.setStartDate(start);
@@ -1656,6 +1652,9 @@
             } else if (this.element.is('input') && this.autoUpdateInput) {
                 this.element.val(this.startDate.format(this.locale.format));
                 this.element.trigger('change');
+            } else if (this.usesExternaInputFields){
+                this.container.dateInputStart.val(this.startDate ? this.startDate.format(this.locale.format) : "");
+                this.container.dateInputEnd.val(this.endDate ? this.endDate.format(this.locale.format) : "");
             }
         },
 
