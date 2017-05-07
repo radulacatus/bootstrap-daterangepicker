@@ -114,6 +114,8 @@
 
         this.container.dateInputStart = this.element.find('input[name="daterangepicker_start"]');
         this.container.dateInputEnd = this.element.find('input[name="daterangepicker_end"]');
+        this.container.dateInputStart.on('change', $.proxy(this.formInputsChanged, this));
+        this.container.dateInputEnd.on('change', $.proxy(this.formInputsChanged, this));
         
         //
         // handle all the possible options overriding defaults
@@ -403,7 +405,7 @@
                 'keydown.daterangepicker': $.proxy(this.keydown, this)
             });
         } else {
-            this.element.on('click.daterangepicker', $.proxy(this.toggle, this));
+            this.element.on('click.daterangepicker','.toggledaterangepicker', $.proxy(this.toggle, this));
         }
 
         //
@@ -424,21 +426,35 @@
 
         constructor: DateRangePicker,
 
-        setStartDate: function(startDate) {
-            if (typeof startDate === 'string')
-                this.startDate = moment(startDate, this.locale.format);
+        parseDate: function(value){
+            if (value && typeof value === 'string'){
+                return moment(value, this.locale.format);
+            } else if (value && typeof value === 'object'){
+                var m = value.target ?
+                    moment(value.target.value,this.locale.format,true): // change event of input field => parse field text
+                    moment(value); // moment obj
 
-            if (typeof startDate === 'object')
-                this.startDate = moment(startDate);
-                
-            this.startDate = this.startDate.startOf('day');
-
-            if (this.minDate && this.startDate.isBefore(this.minDate)) {
-                this.startDate = this.minDate.clone();
+                if(m.isValid && m.year() > 999){
+                    return m;
+                }
             }
 
-            if (this.maxDate && this.startDate.isAfter(this.maxDate)) {
-                this.startDate = this.maxDate.clone();
+            return null;
+        },
+
+        setStartDate: function(startDate) {
+            this.startDate = this.parseDate(startDate);
+
+            if(this.startDate){    
+                this.startDate = this.startDate.startOf('day');
+
+                if (this.minDate && this.startDate.isBefore(this.minDate)) {
+                    this.startDate = this.minDate.clone();
+                }
+
+                if (this.maxDate && this.startDate.isAfter(this.maxDate)) {
+                    this.startDate = this.maxDate.clone();
+                }
             }
 
             if (!this.isShowing)
@@ -448,22 +464,20 @@
         },
 
         setEndDate: function(endDate) {
-            if (typeof endDate === 'string')
-                this.endDate = moment(endDate, this.locale.format);
+            this.endDate = this.parseDate(endDate);
 
-            if (typeof endDate === 'object')
-                this.endDate = moment(endDate);
+            if(this.endDate){
+                this.endDate = this.endDate.endOf('day');
 
-            this.endDate = this.endDate.endOf('day');
+                if (this.endDate.isBefore(this.startDate))
+                    this.endDate = this.startDate.clone();
 
-            if (this.endDate.isBefore(this.startDate))
-                this.endDate = this.startDate.clone();
+                if (this.maxDate && this.endDate.isAfter(this.maxDate))
+                    this.endDate = this.maxDate.clone();
 
-            if (this.maxDate && this.endDate.isAfter(this.maxDate))
-                this.endDate = this.maxDate.clone();
-
-            if (this.dateLimit && this.startDate.clone().add(this.dateLimit).isBefore(this.endDate))
-                this.endDate = this.startDate.clone().add(this.dateLimit);
+                if (this.dateLimit && this.startDate.clone().add(this.dateLimit).isBefore(this.endDate))
+                    this.endDate = this.startDate.clone().add(this.dateLimit);
+            }
 
             if (!this.isShowing)
                 this.updateElement();
@@ -493,7 +507,7 @@
         },
 
         updateMonthsInView: function() {
-            if (this.endDate) {
+            if (this.startDate && this.endDate) {
 
                 //if both dates are visible already, do nothing
                 if (!this.singleDatePicker && this.leftCalendar.month && this.rightCalendar.month &&
@@ -511,10 +525,15 @@
                     this.rightCalendar.month = this.startDate.clone().date(2).add(1, 'month');
                 }
 
-            } else {
+            } else if(this.startDate) {
                 if (this.leftCalendar.month.format('YYYY-MM') != this.startDate.format('YYYY-MM') && this.rightCalendar.month.format('YYYY-MM') != this.startDate.format('YYYY-MM')) {
                     this.leftCalendar.month = this.startDate.clone().date(2);
                     this.rightCalendar.month = this.startDate.clone().date(2).add(1, 'month');
+                }
+            } else if(this.endDate) {
+                if (this.leftCalendar.month.format('YYYY-MM') != this.endDate.format('YYYY-MM') && this.rightCalendar.month.format('YYYY-MM') != this.endDate.format('YYYY-MM')) {
+                    this.leftCalendar.month = this.endDate.clone().date(2);
+                    this.rightCalendar.month = this.endDate.clone().date(2).add(1, 'month');
                 }
             }
             if (this.maxDate && this.linkedCalendars && !this.singleDatePicker && this.rightCalendar.month > this.maxDate) {
@@ -903,6 +922,7 @@
         },
 
         toggle: function(e) {
+            e.stopPropagation();
             if (this.isShowing) {
                 this.hide();
             } else {
@@ -1167,10 +1187,17 @@
 
         formInputsChanged: function(e) {
             var isRight = $(e.target).closest('.calendar').hasClass('right');
-            var start = moment(this.container.dateInputStart.val(), this.locale.format);
-            var end = moment(this.container.dateInputEnd.val(), this.locale.format);
+            var start = this.parseDate(this.container.dateInputStart.val());
+            var end = this.parseDate(this.container.dateInputEnd.val());
 
-            if (start.isValid() && end.isValid()) {
+            if(start == null || !start.isValid()){
+                this.setStartDate(null);
+            }
+            if(end == null || !end.isValid()){
+                this.setEndDate(null);
+            }
+
+            if (start && end && start.isValid() && end.isValid()) {
 
                 if (isRight && end.isBefore(start))
                     start = end.clone();
