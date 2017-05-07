@@ -32,8 +32,6 @@
         //default settings for options
         this.parentEl = 'body';
         this.element = $(element);
-        this.startDate = moment().startOf('day');
-        this.endDate = moment().endOf('day');
         this.minDate = false;
         this.maxDate = false;
         this.dateLimit = false;
@@ -228,7 +226,7 @@
         if (typeof options.singleDatePicker === 'boolean') {
             this.singleDatePicker = options.singleDatePicker;
             if (this.singleDatePicker)
-                this.endDate = this.startDate.clone();
+                this.endDate = this.startDate ? this.startDate.clone() : null;
         }
 
         if (typeof options.autoApply === 'boolean')
@@ -265,20 +263,6 @@
         }
 
         var start, end, range;
-
-        //if no start/end dates set, check if an input element contains initial values
-        if (typeof options.startDate === 'undefined' && typeof options.endDate === 'undefined') {
-            start = end = null;
-
-            if (this.container.dateInputStart.value) {
-                start = moment(this.dateInputStart.value, this.locale.format);
-            } 
-            if (this.container.dateInputEnd.value) {
-                end = moment(this.dateInputEnd.value, this.locale.format);
-            }
-            this.setStartDate(start);
-            this.setEndDate(end);
-        }
 
         if (typeof options.ranges === 'object') {
             for (range in options.ranges) {
@@ -332,8 +316,8 @@
             this.callback = cb;
         }
 
-        this.startDate = this.startDate.startOf('day');
-        this.endDate = this.endDate.endOf('day');
+        this.startDate = this.startDate ? this.startDate.startOf('day') : null;
+        this.endDate = this.endDate ? this.endDate.endOf('day') : null;
 
         if (this.autoApply && typeof options.ranges !== 'object') {
             this.container.find('.ranges').hide();
@@ -412,7 +396,7 @@
         if (this.element.is('input') && !this.singleDatePicker && this.autoUpdateInput) {
             // single input element for range not supported anymore
         } else if (this.element.is('input') && this.autoUpdateInput) {
-            this.element.val(this.startDate.format(this.locale.format));
+            this.element.val(this.startDate ? this.startDate.format(this.locale.format) : null);
             this.element.trigger('change');
         }
     };
@@ -532,6 +516,8 @@
                     this.leftCalendar.month = this.endDate.clone().date(2);
                     this.rightCalendar.month = this.endDate.clone().date(2).add(1, 'month');
                 }
+            } else {
+                this.rightCalendar.month = this.leftCalendar.month = moment().date(2);
             }
             if (this.maxDate && this.linkedCalendars && !this.singleDatePicker && this.rightCalendar.month > this.maxDate) {
               this.rightCalendar.month = this.maxDate.clone().date(2);
