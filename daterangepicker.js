@@ -226,7 +226,7 @@
         if (typeof options.singleDatePicker === 'boolean') {
             this.singleDatePicker = options.singleDatePicker;
             if (this.singleDatePicker)
-                this.endDate = this.startDate ? this.startDate.clone() : null;
+                this.endDate = this.clone(this.startDate);
         }
 
         if (typeof options.autoApply === 'boolean')
@@ -386,7 +386,8 @@
                 'keydown.daterangepicker': $.proxy(this.keydown, this)
             });
         } else {
-            this.element.on('click.daterangepicker','.toggledaterangepicker', $.proxy(this.toggle, this));
+            this.element.on('click.daterangepicker', '.daterangepicker_start .toggledaterangepicker', { active: 'start' }, $.proxy(this.toggle, this));
+            this.element.on('click.daterangepicker', '.daterangepicker_end .toggledaterangepicker', { active: 'end' }, $.proxy(this.toggle, this));
         }
 
         //
@@ -517,7 +518,8 @@
                     this.rightCalendar.month = this.endDate.clone().date(2).add(1, 'month');
                 }
             } else {
-                this.rightCalendar.month = this.leftCalendar.month = moment().date(2);
+                this.leftCalendar.month = moment().date(2);
+                this.rightCalendar.month = moment().date(2).add(1, 'month');
             }
             if (this.maxDate && this.linkedCalendars && !this.singleDatePicker && this.rightCalendar.month > this.maxDate) {
               this.rightCalendar.month = this.maxDate.clone().date(2);
@@ -852,7 +854,8 @@
             }
         },
 
-        show: function(e) {
+        show: function (data) {
+            this.active = data.active;
             if (this.isShowing) return;
 
             // Create a click proxy that is private to this instance of datepicker, for unbinding
@@ -871,8 +874,8 @@
             // Reposition the picker if the window is resized while it's open
             $(window).on('resize.daterangepicker', $.proxy(function(e) { this.move(e); }, this));
 
-            this.oldStartDate = this.startDate ? this.startDate.clone() : null;
-            this.oldEndDate = this.endDate ? this.endDate.clone() : null;
+            this.oldStartDate = this.clone(this.startDate);
+            this.oldEndDate = this.clone(this.endDate);
 
             this.updateView();
             this.container.show();
@@ -887,8 +890,8 @@
             //incomplete date selection, revert to last values
             if ((!this.endDate && this.endDateRequired) ||
                 (!this.startDate && this.startDateRequired)) {
-                this.startDate = this.oldStartDate.clone();
-                this.endDate = this.oldEndDate.clone();
+                this.startDate = this.clone(this.oldStartDate);
+                this.endDate = this.clone(this.oldEndDate);
             }
 
             //if a new date range was selected, invoke the user callback function
@@ -914,7 +917,7 @@
             if (this.isShowing) {
                 this.hide();
             } else {
-                this.show();
+                this.show(e.data);
             }
         },
 
@@ -922,13 +925,13 @@
             var target = $(e.target);
             // if the page is clicked anywhere except within the daterangerpicker/button
             // itself then call this.hide()
-            if (
-                // ie modal dialog fix
+            if (// ie modal dialog fix
                 e.type == "focusin" ||
                 target.closest(this.element).length ||
                 target.closest(this.container).length ||
-                target.closest('.calendar-table').length
-                ) return;
+                target.closest('.calendar-table').length)
+                return;
+            
             this.hide();
             this.element.trigger('outsideClick.daterangepicker', this);
         },
@@ -1025,9 +1028,10 @@
             var leftCalendar = this.leftCalendar;
             var rightCalendar = this.rightCalendar;
             var startDate = this.startDate;
-            if (!this.endDate) {
+            var endDate = this.endDate;
+            if ((!this.endDate && this.active === 'end') || 
+                (!this.startDate && this.active === 'start')) {
                 this.container.find('.calendar tbody td').each(function(index, el) {
-
                     //skip week numbers, only look at dates
                     if ($(el).hasClass('week')) return;
 
@@ -1037,8 +1041,10 @@
                     var cal = $(el).parents('.calendar');
                     var dt = cal.hasClass('left') ? leftCalendar.calendar[row][col] : rightCalendar.calendar[row][col];
 
-                    if ((dt.isAfter(startDate) && dt.isBefore(date)) || dt.isSame(date, 'day')) {
+                    if (startDate && (dt.isAfter(startDate) && dt.isBefore(date)) || dt.isSame(date, 'day')) {
                         $(el).addClass('in-range');
+                    } else if(endDate && (dt.isBefore(endDate) && dt.isAfter(date)) || dt.isSame(date, 'day')){
+                        $(el).addClass('in-range'); 
                     } else {
                         $(el).removeClass('in-range');
                     }
@@ -1058,24 +1064,23 @@
             var cal = $(e.target).parents('.calendar');
             var date = cal.hasClass('left') ? this.leftCalendar.calendar[row][col] : this.rightCalendar.calendar[row][col];
 
-            //
-            // this function needs to do a few things:
-            // * alternate between selecting a start and end date for the range,
-            // * if autoapply is enabled, and an end date was chosen, apply the selection
-            // * if one of the inputs above the calendars was focused, cancel that manual input
-            //
-
-            if (this.endDate || !this.startDate || date.isBefore(this.startDate, 'day')) { //picking start
+            if (this.startDate && this.endDate) {
+                this.startDate = null;
                 this.endDate = null;
+            }
+
+            if (this.active === 'start') {
                 this.setStartDate(date.clone());
-            } else if (!this.endDate && date.isBefore(this.startDate)) {
-                this.setEndDate(this.startDate.clone());
-            } else { // picking end
-                this.setEndDate(date.clone());
-                if (this.autoApply) {
-                  this.calculateChosenLabel();
-                  this.clickApply();
+                if (this.endDate && date.isAfter(this.endDate, 'day')) {
+                    this.setEndDate(date.clone());
                 }
+                this.active = 'end';
+            } else if (this.active === 'end') {
+                this.setEndDate(date.clone());
+                if (this.startDate && date.isBefore(this.startDate, 'day')) {
+                    this.setStartDate(date.clone());
+                }
+                this.active = 'start';
             }
 
             if (this.singleDatePicker) {
@@ -1083,11 +1088,13 @@
                 this.clickApply();
             }
 
+            if (this.startDate && this.endDate && this.autoApply) {
+                this.calculateChosenLabel();
+                this.clickApply();
+            }
+
             this.updateView();
-
-            //This is to cancel the blur event handler if the mouse was in one of the inputs
             e.stopPropagation();
-
         },
 
         calculateChosenLabel: function () {
@@ -1279,6 +1286,10 @@
             this.container.remove();
             this.element.off('.daterangepicker');
             this.element.removeData();
+        },
+
+        clone: function (date) {
+            return date ? date.clone() : null;
         }
 
     };
