@@ -1,11 +1,3 @@
-/**
-* @version: 2.1.25
-* @author: Dan Grossman http://www.dangrossman.info/
-* @copyright: Copyright (c) 2012-2017 Dan Grossman. All rights reserved.
-* @license: Licensed under the MIT license. See http://www.opensource.org/licenses/mit-license.php
-* @website: http://www.daterangepicker.com/
-*/
-// Follow the UMD template https://github.com/umdjs/umd/blob/master/templates/returnExportsGlobal.js
 (function (root, factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Make globaly available as well
@@ -34,6 +26,7 @@
         this.element = $(element);
         this.minDate = false;
         this.maxDate = false;
+        this.enforceConstraint = false;
         this.dateLimit = false;
         this.autoApply = false;
         this.singleDatePicker = false;
@@ -180,6 +173,9 @@
         // sanity check for bad options
         if (this.maxDate && this.endDate.isAfter(this.maxDate))
             this.endDate = this.maxDate.clone();
+
+        if (typeof options.enforceConstraint === 'boolean')
+            this.enforceConstraint = options.enforceConstraint;
 
         if (typeof options.applyClass === 'string')
             this.applyClass = options.applyClass;
@@ -676,10 +672,26 @@
 
             //adjust maxDate to reflect the dateLimit setting in order to
             //grey out end dates beyond the dateLimit
-            if (this.startDate != null && this.endDate == null && this.dateLimit) {
-                var maxLimit = this.startDate.clone().add(this.dateLimit).endOf('day');
-                if (!maxDate || maxLimit.isBefore(maxDate)) {
-                    maxDate = maxLimit;
+            if (this.startDate != null && this.endDate == null) { //this.active = 'end'
+                if (this.enforceConstraint) {
+                    minDate = this.startDate.clone();
+                }
+                if (this.dateLimit) {
+                    var maxLimit = this.startDate.clone().add(this.dateLimit).endOf('day');
+                    if (!maxDate || maxLimit.isBefore(maxDate)) {
+                        maxDate = maxLimit;
+                    }
+                }
+            }
+            if (this.endDate != null && this.startDate == null) { //this.active = 'start'
+                if (this.enforceConstraint) {
+                    maxDate = this.endDate.clone();
+                }
+                if (this.dateLimit) {
+                    var minLimit = this.endDate.clone().subtract(this.dateLimit).startOf('day');
+                    if (!minDate || minLimit.isAfter(minDate)) {
+                        minDate = minLimit;
+                    }
                 }
             }
 
@@ -713,7 +725,8 @@
                         classes.push('off', 'disabled');
 
                     //don't allow selection of dates after the maximum date
-                    if (maxDate && calendar[row][col].isAfter(maxDate, 'day'))
+                    if ((maxDate && calendar[row][col].isAfter(maxDate, 'day')) ||
+                        (minDate && calendar[row][col].isBefore(minDate)))
                         classes.push('off', 'disabled');
 
                     //don't allow selection of date if a custom function decides it's invalid
@@ -1062,15 +1075,9 @@
 
             if (this.active === 'start') {
                 this.setStartDate(date.clone());
-                if (this.endDate && date.isAfter(this.endDate, 'day')) {
-                    this.setEndDate(date.clone());
-                }
                 this.active = 'end';
             } else if (this.active === 'end') {
                 this.setEndDate(date.clone());
-                if (this.startDate && date.isBefore(this.startDate, 'day')) {
-                    this.setStartDate(date.clone());
-                }
                 this.active = 'start';
             }
 
@@ -1086,39 +1093,6 @@
 
             this.updateView();
             e.stopPropagation();
-
-            //// * alternate between selecting a start and end date for the range,
-            //// * if autoapply is enabled, and an end date was chosen, apply the selection
-            //// * if one of the inputs above the calendars was focused, cancel that manual input
-            ////
-            //if (this.active === 'start') {
-            //    this.setStartDate(date.clone());
-            //    this.active = 'end';
-            //} else if (this.active === 'end') {
-            //    this.setEndDate(date.clone());
-            //    this.active = undefined;
-            //} else if (this.endDate || !this.startDate || date.isBefore(this.startDate, 'day')) { //picking start
-            //    //this.endDate = null;
-            //    this.setStartDate(date.clone());
-            //} else if (!this.endDate && date.isBefore(this.startDate)) {
-            //    this.setEndDate(this.startDate.clone());
-            //} else { // picking end
-            //    this.setEndDate(date.clone());
-            //    if (this.autoApply) {
-            //      this.calculateChosenLabel();
-            //      this.clickApply();
-            //    }
-            //}
-
-            //if (this.singleDatePicker) {
-            //    this.setEndDate(this.startDate);
-            //    this.clickApply();
-            //}
-
-            //this.updateView();
-
-            ////This is to cancel the blur event handler if the mouse was in one of the inputs
-            //e.stopPropagation();
         },
 
         calculateChosenLabel: function () {
